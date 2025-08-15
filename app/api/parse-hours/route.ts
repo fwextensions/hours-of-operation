@@ -78,7 +78,10 @@ Important parsing guidelines:
 - If a day has a break (like lunch), create separate entries for before and after the break
 - Pay careful attention to ALL days mentioned in the input - don't skip any
 - "9-5" means 09:00 to 17:00
-- "lunch at 12" typically means a 1-hour break from 12:00-13:00`
+- "lunch at 12" typically means a 1-hour break from 12:00-13:00
+- For closed days (like "closed", "clsoed", etc.), use "closed" for both start and end times
+- Handle mixed time formats: "7:42 - 2:42pm" means 07:42 to 14:42
+- When PM is specified for end time only, assume start time is AM if it makes sense`
         },
         {
           role: 'user',

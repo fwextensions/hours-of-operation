@@ -1,0 +1,44 @@
+{
+  "components": [
+    {
+      "label": "Business Hours Description",
+      "autoExpand": false,
+      "tableView": true,
+      "key": "hoursInput",
+      "type": "textarea",
+      "input": true,
+      "placeholder": "e.g., we're open Monday-Friday 9-5, closed for lunch 12-1, weekends 10-3",
+      "rows": 4,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Parse Hours",
+      "action": "custom",
+      "showValidations": false,
+      "tableView": false,
+      "key": "parseButton",
+      "type": "button",
+      "input": true,
+      "theme": "primary",
+      "size": "md",
+      "custom": "const hoursText = data.hoursInput;\nconst parsedHoursComponent = form.getComponent('parsedHours');\n\n// Validate input\nif (!hoursText || hoursText.trim() === '') {\n  parsedHoursComponent.setValue('Please enter business hours description first.');\n  return;\n}\n\n// Set loading state\nparsedHoursComponent.setValue('Parsing hours...');\ncomponent.disabled = true;\ncomponent.element.textContent = 'Processing...';\n\n// Make API call\nfetch('https://hours-of-operation.vercel.app/api/parse-hours', {\n  method: 'POST',\n  headers: {\n    'Content-Type': 'application/json',\n  },\n  body: JSON.stringify({ hoursText: hoursText.trim() })\n})\n.then(response => {\n  if (!response.ok) {\n    return response.json().then(err => {\n      throw new Error(err.error || `API Error: ${response.status}`);\n    });\n  }\n  return response.json();\n})\n.then(result => {\n  // Format and display result\n  const formattedHours = formatHoursForDisplay(result.result);\n  parsedHoursComponent.setValue(formattedHours);\n})\n.catch(error => {\n  console.error('Parse hours error:', error);\n  parsedHoursComponent.setValue(`Error: ${error.message}`);\n})\n.finally(() => {\n  // Re-enable button\n  component.disabled = false;\n  component.element.textContent = 'Parse Hours';\n});\n\n// Helper function to format hours for display\nfunction formatHoursForDisplay(parsedResult) {\n  if (!parsedResult || !parsedResult.hours || !Array.isArray(parsedResult.hours)) {\n    return 'No hours found';\n  }\n  \n  // Sort hours by day\n  const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];\n  const sortedHours = parsedResult.hours.sort((a, b) => {\n    return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);\n  });\n  \n  // Format as readable text\n  return sortedHours.map(hour => {\n    const startTime = formatTime(hour.start);\n    const endTime = formatTime(hour.end);\n    return `${hour.day}: ${startTime} - ${endTime}`;\n  }).join('\\n');\n}\n\n// Helper function to format time from 24hr to 12hr\nfunction formatTime(time24) {\n  const [hours, minutes] = time24.split(':');\n  const hour = parseInt(hours);\n  const ampm = hour >= 12 ? 'PM' : 'AM';\n  const hour12 = hour % 12 || 12;\n  return `${hour12}:${minutes} ${ampm}`;\n}"
+    },
+    {
+      "label": "Parsed Hours",
+      "autoExpand": false,
+      "tableView": true,
+      "key": "parsedHours",
+      "type": "textarea",
+      "input": true,
+      "disabled": true,
+      "rows": 8,
+      "defaultValue": "Click 'Parse Hours' to process your business hours description.",
+      "wysiwyg": false,
+      "validate": {
+        "required": false
+      }
+    }
+  ]
+}

@@ -5,6 +5,18 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Handle preflight OPTIONS request for CORS
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { hoursText } = await request.json();
@@ -12,14 +24,28 @@ export async function POST(request: NextRequest) {
     if (!hoursText || typeof hoursText !== 'string') {
       return NextResponse.json(
         { error: 'Please provide valid business hours text.' },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
       );
     }
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
         { error: 'OpenAI API key not configured on server.' },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
       );
     }
 
@@ -75,31 +101,53 @@ Important parsing guidelines:
     // Try to parse as JSON to validate
     try {
       const parsedResult = JSON.parse(result);
-      return NextResponse.json({ result: parsedResult });
+      return NextResponse.json(
+        { result: parsedResult },
+        {
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
+      );
     } catch (parseError) {
       return NextResponse.json(
         { error: 'Failed to parse AI response as valid JSON' },
-        { status: 500 }
+        { 
+          status: 500,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          }
+        }
       );
     }
 
   } catch (error: any) {
     console.error('API Error:', error);
     
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    };
+
     if (error?.status === 401) {
       return NextResponse.json(
         { error: 'Invalid OpenAI API key' },
-        { status: 401 }
+        { status: 401, headers: corsHeaders }
       );
     } else if (error?.status === 429) {
       return NextResponse.json(
         { error: 'API quota exceeded or rate limited' },
-        { status: 429 }
+        { status: 429, headers: corsHeaders }
       );
     } else {
       return NextResponse.json(
         { error: 'Failed to process request' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
   }
